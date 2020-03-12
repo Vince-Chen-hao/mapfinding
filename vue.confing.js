@@ -1,3 +1,6 @@
 module.exports = {
-  publicPath: '/mapfinding/'
+  publicPath: process.env.NODE_ENV === 'production'
+    ? '/MaskFinder/'
+    : '/'
+
 }

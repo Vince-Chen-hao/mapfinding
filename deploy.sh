@@ -14,6 +14,8 @@ git add -A
 git commit -m 'deploy'
 
 # 部署到 https://<USERNAME>.github.io/<REPO>
-git push -f https://vince-chen-hao.github.io/MaskMap_Vue.git master:gh-pages
+git push -f https://github.com/Vince-Chen-hao/MaskFinder.git master:gh-pages
 
 cd -
+
+#執行，終端機輸入sh ./deploy.sh
