@@ -65,7 +65,7 @@
               </div>
               <div class="d-flex text-muted justify-content-end">
                 <i class="fa fa-bullhorn mr-2"></i>
-                <p class="mb-0 small">每週限購一次（成人三片，小孩五片)</p>
+                <p class="mb-0 small">兩週每人限購九片口罩</p>
               </div>
             </div>
           </div>
