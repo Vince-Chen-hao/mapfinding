@@ -3,7 +3,10 @@
     <div class="home row no-gutters">
       <div class="col-md-3">
         <div class="toolbox">
-          <div class="titlename">口罩查詢地圖</div>
+          <div class="d-flex titlename">
+          <i class="fas fa-street-view mt-1"></i>
+            <div>口罩查詢地圖</div>
+          </div>
           <div class="shadow-sm">
             <div class="date d-flex justify-content-between">
               <div>
@@ -32,6 +35,7 @@
                     v-model="select.city"
                     @change="select.area = ''"
                   >
+                  <!-- 當選擇其他選項時，就會觸發change裡的指令 -->
                     <option value>-- 請選擇縣市 --</option>
                     <option
                       v-for="item in cityName"
@@ -48,7 +52,7 @@
                     id="area"
                     v-if="select.city.length"
                     v-model="select.area"
-                    @change="updateSelect"
+                    @change="updateSelect" 
                   >
                     <option value>-- 請選擇地區 --</option>
                     <option
@@ -68,8 +72,10 @@
 
           <ul class="list-group text-dark">
             <template v-for="(item, key) in data">
+              
+                <!-- v-if這裡的用法是指“顯示” 兩個選擇列與data裡資料相同的，其他就隱藏 -->
               <a class="list-group-item"
-                :key="key"
+                :key="key" 
                 v-if="item.properties.county === select.city && item.properties.town === select.area"
                 :class="{ 'mask-highlight': !item.properties.mask_adult && !item.properties.mask_child}"
                 @click="penTo(item)"
@@ -115,9 +121,31 @@
 import L from "leaflet";
 import cityName from "./assets/taiwanArea.json";
 
-console.log(L); // 載leaflet近來需要使用consolelog????
+console.log(L); // 載leaflet近來需要使用consolelog
+
+//流程取得API資料後，呼叫updateMarker取得select選項的對應資料，匯入map顯示地圖座標
 
 let osmap = {};
+
+const iconsConfig = {
+  iconSize: [25, 41],
+  iconAnchor: [12, 41],
+  popupAnchor: [1, -34],
+  shadowSize: [41, 41],
+};
+
+const icons = {
+  orange: new L.Icon({
+    iconUrl: 'https://cdn.rawgit.com/pointhi/leaflet-color-markers/master/img/marker-icon-orange.png',
+    ...iconsConfig,
+  }),
+  grey: new L.Icon({
+    iconUrl: 'https://raw.githubusercontent.com/pointhi/leaflet-color-markers/master/img/marker-icon-grey.png',
+    ...iconsConfig, 
+  }),
+};
+
+
 
 export default {
   name: "App",
@@ -147,24 +175,26 @@ export default {
       //利用forEach執行動作，取得座標＋顯示內容
       pharmacies.forEach(pharmacy => {
         const { properties, geometry } = pharmacy;
+        const icon = properties.mask_adult || properties.mask_child ? icons.orange : icons.grey;
         L.marker([
-          geometry.coordinates[1],
-          geometry.coordinates[0],
-          properties
-        ]).addTo(osmap).bindPopup(`<h5>${properties.name}</h5>
+          geometry.coordinates[1],geometry.coordinates[0],properties],{icon})
+          .addTo(osmap).bindPopup(`<h5>${properties.name}</h5>
             電話： ${properties.phone}<br>
             地址：<a href="https://www.google.com.tw/maps/place/${properties.address}" target="_blank">${properties.address}</a><br> 
             <small>資料更新時間：${properties.updated}</small> 
             <p>備註： ${properties.note}</p>
             <hr>  
-            <mark>口罩數量：<b>成人有<ins> 
-            ${properties.mask_adult} </ins>個 / 兒童有 <ins> ${properties.mask_child}</ins> 個 
+            <mark>口罩數量：<b>成人<ins> 
+            ${properties.mask_adult} </ins>個 / 兒童 <ins> ${properties.mask_child}</ins> 個 
             </b></mark><br>
             `);
       });
-      this.penTo(pharmacies[0]); //傳入該地區第一個藥局
+      //上面執行的forEach是顯示初步取得（select選項）的地圖資訊，而非點擊後的
+
+      this.penTo(pharmacies[0]); //回傳入第一個藥局進入penTo下方的語法
+      
     },
-    // 移除舊的指標
+    // 當select切換區域時(@change))，就會觸發移除指標
     updateSelect() {
       osmap.eachLayer(layer => {
         if (layer instanceof L.Marker) {
@@ -176,15 +206,18 @@ export default {
 
     penTo(item) {
       const { properties, geometry } = item;
-      //panTo移動至指定位置
+      const icon = properties.mask_adult || properties.mask_child ? icons.orange : icons.grey;
+
+      //panTo的功用是點擊後會移動至指定位置並聚焦放大
       osmap.panTo([
         geometry.coordinates[1],
         geometry.coordinates[0],
         properties
-      ]); //聚焦載入的區域
-      L.marker([geometry.coordinates[1], geometry.coordinates[0]])
-        .addTo(osmap)
-        .bindPopup(
+      ]); 
+      
+      //取得指定區域的位置
+      L.marker([geometry.coordinates[1], geometry.coordinates[0]],{icon})
+        .addTo(osmap).bindPopup(
           `<h5>${properties.name}</h5>
             電話：${properties.phone}<br>
             地址： <a href="https://www.google.com.tw/maps/place/${properties.address}" target="_blank">${properties.address}</a><br> 
@@ -196,7 +229,9 @@ export default {
             </b></mark><br>
             `
         )
-        .openPopup(); //彈跳此藥局的資訊
+        .openPopup(); 
+        //彈跳鼠標藥局的“資訊文字”
+        //這裡會顯示聚焦後(點擊後會放大)的資訊
     }
   },
 
@@ -205,6 +240,8 @@ export default {
       const chineseDay = ["日", "一", "二", "三", "四", "五", "六"];
       return `星期${chineseDay[day]}`;
       //此時的參數(day)))是套用在Ｉ前方的數值，自動套入無需宣告
+      //取得getday()取得星期，星期日＝0 星期一 = 1....
+      //https://cythilya.github.io/2017/05/23/vue-filter/
     },
     convertToDateString(date) {
       const tensdigit = n => {
@@ -212,7 +249,7 @@ export default {
       };
 
       return `${date.getFullYear()}-${tensdigit(
-        date.getMonth() + 1
+        date.getMonth() + 1 //month[0] = 一月，真實月份需再加1
       )}-${tensdigit(date.getDate())}`;
     }
   },
@@ -222,12 +259,13 @@ export default {
       "https://raw.githubusercontent.com/kiang/pharmacies/master/json/points.json";
     this.$http.get(url).then(response => {
       this.data = response.data.features;
+      console.log("<data>"+JSON.stringify(this.data));
       this.updateMarker(); //取得資料後執行更新
     });
 
     osmap = L.map("map", {
       center: [25.03, 121.55],
-      zoom: 15
+      zoom: 16
     });
 
     L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png?{foo}", {
